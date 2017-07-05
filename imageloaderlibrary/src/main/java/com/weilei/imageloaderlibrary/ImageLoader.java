@@ -55,7 +55,7 @@ public class ImageLoader {
     private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
     private static final long KEEP_ALIVE = 10L;
     private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
-    private static final int TAG_KEY_URI = 0;
+    private static final int TAG_KEY_URI = R.id.tag_imageview;
     public static final int MESSAGE_POST_RESULT = 1;
 
     private static final ThreadFactory sThreadFactory = new ThreadFactory() {
@@ -74,9 +74,9 @@ public class ImageLoader {
         public void handleMessage(Message msg) {
             LoaderResult result = (LoaderResult) msg.obj;
             ImageView imageView = result.imageView;
-            String uri = (String) imageView.getTag();
+            String uri = (String) imageView.getTag(TAG_KEY_URI);
             Bitmap bitmap = result.bitmap;
-            if (uri.equals(result.uri)) {
+            if (uri != null && uri.equals(result.uri)) {
                 imageView.setImageBitmap(bitmap);
             } else {
                 Log.w(TAG, "set image bitmap ,but url has changed, ignored!");
@@ -130,7 +130,7 @@ public class ImageLoader {
 
     public void bindBitmap(final String uri, final ImageView imageView, final int reqWidth, final int reqHeight) {
         imageView.setTag(TAG_KEY_URI, uri);
-        Bitmap bitmap = loadBitmap(uri, reqWidth, reqHeight);
+        Bitmap bitmap = loadBitmapFromMemoryCache(uri);
         if (bitmap != null) {
             imageView.setImageBitmap(bitmap);
             return;
@@ -284,8 +284,12 @@ public class ImageLoader {
                 connection.disconnect();
             }
             try {
-                bufferedInputStream.close();
-                bufferedOutputStream.close();
+                if (bufferedInputStream != null) {
+                    bufferedInputStream.close();
+                }
+                if (bufferedOutputStream != null) {
+                    bufferedOutputStream.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
